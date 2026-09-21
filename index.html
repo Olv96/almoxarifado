@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Endereçamento de Almoxarifado</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Supabase JS SDK via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- Authentication Overlay (Bloqueio de tela de Login) -->
+  <div id="auth-overlay" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-icon-badge">📦</div>
+        <h2>Almoxarifado Pro</h2>
+        <span class="auth-pill">Acesso Restrito</span>
+      </div>
+      <p class="auth-desc">Identifique-se para acessar o endereçamento e estoque.</p>
+
+      <form id="auth-form" class="auth-form" autocomplete="on">
+        <div class="form-group">
+          <label for="auth-username" class="form-label">Usuário</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="auth-username" class="form-control" placeholder="Usuário" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-password" class="form-label">Senha de Acesso</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">🔑</span>
+            <input type="password" id="auth-password" class="form-control" placeholder="Digite sua senha" required autocomplete="current-password">
+            <button type="button" id="btn-toggle-password" class="btn-input-action" title="Mostrar/ocultar senha">👁️</button>
+          </div>
+        </div>
+
+        <div class="auth-remember-row">
+          <label class="custom-checkbox-label">
+            <input type="checkbox" id="auth-remember-me" checked>
+            <span>Manter conectado neste dispositivo</span>
+          </label>
+        </div>
+
+        <div id="auth-error-banner" class="alert-banner alert-danger hidden">
+          <span>⚠️ Usuário ou senha incorretos! Verifique e tente novamente.</span>
+        </div>
+
+        <button type="submit" id="btn-auth-submit" class="btn btn-primary btn-auth">
+          <span>🔓</span> Entrar no Almoxarifado
+        </button>
+      </form>
+
+      <div class="auth-footer-info">
+        <span class="cloud-ready-indicator">☁️ Supabase Cloud &amp; Realtime Integrado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container" id="main-app-container">
+    <!-- Top Navigation / Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">📦</div>
+        <div>
+          <div class="brand-title-row">
+            <h1>Almoxarifado Pro</h1>
+            <div id="cloud-status-badge" class="cloud-badge cloud-local" title="Status da Nuvem Supabase (Clique para Configurar)">
+              <span class="cloud-dot"></span>
+              <span id="cloud-status-text">Modo Local</span>
+            </div>
+          </div>
+          <p class="subtitle">Gestão Visual de Endereçamento & Paletes</p>
+        </div>
+      </div>
+
+      <!-- Quick Search Bar -->
+      <div class="header-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="global-search-input" placeholder="Buscar produto, lote ou endereço (ex: A1)..." autocomplete="off">
+        <button id="clear-search-btn" class="btn-icon hidden" title="Limpar busca">✕</button>
+      </div>
+
+      <!-- Header Action Buttons -->
+      <div class="header-actions">
+        <button id="btn-quick-movement" class="btn btn-primary">
+          <span class="btn-icon-symbol">➕</span> Nova Movimentação
+        </button>
+        <button id="btn-import-excel" class="btn btn-success" title="Selecionar e importar planilha Excel (.xlsx, .xls ou .csv)">
+          <span class="btn-icon-symbol">📊</span> Importar Planilha
+        </button>
+        <button id="btn-catalog" class="btn btn-secondary" title="Ver e gerenciar catálogo de códigos/produtos">
+          <span class="btn-icon-symbol">📚</span> Catálogo
+        </button>
+        <button id="btn-history" class="btn btn-secondary">
+          <span class="btn-icon-symbol">📋</span> Histórico
+        </button>
+        <button id="btn-cloud-config" class="btn btn-outline" title="Configurar Banco de Dados Supabase">
+          <span class="btn-icon-symbol">☁️</span> Nuvem
+        </button>
+        <button id="btn-settings" class="btn btn-icon-only" title="Backup e Dados">
+          ⚙️
+        </button>
+        <!-- User Session Badge & Logout -->
+        <div class="user-session-badge" id="user-session-badge" title="Usuário conectado">
+          <span class="user-badge-icon">👤</span>
+          <span class="user-badge-name" id="user-display-name">Brunohof</span>
+          <button type="button" id="btn-logout" class="btn-logout" title="Sair do sistema">Sair 🚪</button>
+        </div>
+        <!-- Input invisível para seleção direta de arquivo -->
+        <input type="file" id="direct-excel-file-input" accept=".xlsx,.xls,.csv,.txt" class="file-input hidden">
+      </div>
+    </header>
+
+    <!-- Search Results Flyout / Notification -->
+    <div id="search-results-panel" class="search-results-panel hidden">
+      <div class="search-results-header">
+        <span id="search-count-label">0 resultados encontrados</span>
+        <button id="close-search-panel-btn" class="btn-close-sm">✕</button>
+      </div>
+      <div id="search-results-list" class="search-results-list"></div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-total">🏢</div>
+        <div class="kpi-info">
+          <span class="kpi-title">Total de Vagas</span>
+          <span class="kpi-value" id="kpi-total-slots">0</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-empty">🟢</div>
+        <div class="kpi-info">
+          <span class="kpi-title">Vagas Livres</span>
+          <span class="kpi-value" id="kpi-free-slots">0</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-occupied">🔵</div>
+        <div class="kpi-info">
+          <span class="kpi-title">Vagas Ocupadas</span>
+          <span class="kpi-value" id="kpi-occupied-slots">0</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-mixed">🟠</div>
+        <div class="kpi-info">
+          <div class="kpi-mixed-header">
+            <span class="kpi-title">Paletes Mistos</span>
+            <span class="badge-alert">Atenção</span>
+          </div>
+          <span class="kpi-value" id="kpi-mixed-pallets">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Street Navigation & Management -->
+    <nav class="street-nav-container">
+      <div class="street-tabs-scroll" id="street-tabs-wrapper">
+        <!-- Dynamic Street Tabs inserted here by JS -->
+      </div>
+      <div class="street-management-actions">
+        <div class="street-sort-control" title="Ordenar visualização das Ruas">
+          <label for="street-sort-select"><span>🔃</span> Ordem:</label>
+          <select id="street-sort-select" class="street-sort-dropdown">
+            <option value="NUM_ASC">1 ➔ 9 (Crescente)</option>
+            <option value="NUM_DESC">9 ➔ 1 (Decrescente)</option>
+            <option value="ITEMS_DESC">Mais Itens (+ ocupadas)</option>
+            <option value="ITEMS_ASC">Menos Itens (- vazias)</option>
+            <option value="ALPHA_ASC">A ➔ Z (Alfabética)</option>
+          </select>
+        </div>
+        <button id="btn-add-street" class="btn btn-outline" title="Criar nova Rua">
+          <span>➕</span> Nova Rua
+        </button>
+        <button id="btn-edit-street" class="btn btn-outline" title="Gerenciar Rua e Prateleiras">
+          <span>📐</span> Ajustar Vagas
+        </button>
+      </div>
+    </nav>
+
+    <!-- Street Details & Legend -->
+    <section class="street-toolbar">
+      <div class="street-title-block">
+        <h2 id="current-street-name">Rua 1</h2>
+        <span class="street-stats-badge" id="current-street-stats">16 vagas • 4 vãos</span>
+      </div>
+
+      <!-- Color Legend -->
+      <div class="status-legend">
+        <div class="legend-item">
+          <span class="legend-dot dot-free"></span>
+          <span>Vazia</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot dot-occupied"></span>
+          <span>1 Produto</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot dot-mixed"></span>
+          <span>Palete Misto (2 Produtos)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Warehouse Rack / Visual Prateleira -->
+    <main class="rack-viewport">
+      <div class="rack-structure" id="rack-container">
+        <!-- Rendered dynamically by app.js with Upper Level (B) and Lower Level (A) -->
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= MODAIS ================= -->
+
+  <!-- 1. Modal de Movimentação (Entrada, Saída, Correção) -->
+  <dialog id="movement-modal" class="app-dialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div class="dialog-title-wrapper">
+          <span class="dialog-badge" id="modal-type-badge">ENTRADA</span>
+          <h3 id="modal-title">Registrar Movimentação</h3>
+        </div>
+        <button class="btn-close" id="btn-close-movement-modal">✕</button>
+      </div>
+
+      <form id="movement-form" class="dialog-body">
+        <!-- Tipo de Movimentação -->
+        <div class="form-group">
+          <label class="form-label">Tipo de Operação <span class="required">*</span></label>
+          <div class="movement-type-selector">
+            <label class="type-btn type-in selected">
+              <input type="radio" name="movementType" value="ENTRADA" checked>
+              <span class="type-icon">📥</span>
+              <span class="type-text">Entrada</span>
+            </label>
+            <label class="type-btn type-out">
+              <input type="radio" name="movementType" value="SAIDA">
+              <span class="type-icon">📤</span>
+              <span class="type-text">Saída</span>
+            </label>
+            <label class="type-btn type-fix">
+              <input type="radio" name="movementType" value="CORRECAO">
+              <span class="type-icon">🛠️</span>
+              <span class="type-text">Correção</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Endereço (Rua e Vaga) -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="move-street" class="form-label">Rua <span class="required">*</span></label>
+            <select id="move-street" class="form-control" required>
+              <!-- Filled by JS -->
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label for="move-slot" class="form-label">Endereço / Vaga <span class="required">*</span></label>
+            <select id="move-slot" class="form-control" required>
+              <!-- Filled by JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Alerta de Palete Misto / Informações da Vaga Atual -->
+        <div id="slot-live-status-box" class="slot-live-status-box hidden">
+          <!-- Injected dynamically showing existing items in this slot -->
+        </div>
+
+        <!-- Seletor de Produto (Dinâmico para Saída/Correção ou Input Livre para Entrada) -->
+        <div class="form-group" id="product-select-group">
+          <label for="move-product-select" class="form-label">Produto na Vaga <span class="required">*</span></label>
+          <select id="move-product-select" class="form-control">
+            <option value="">Selecione o produto...</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="product-input-group">
+          <div class="form-label-row">
+            <label for="move-product-input" class="form-label">
+              Produto / Código <span class="required">*</span>
+            </label>
+            <span class="catalog-hint-text" id="catalog-count-hint">💡 Digite código ou nome para autocompletar</span>
+          </div>
+          <div class="autocomplete-wrapper">
+            <input type="text" id="move-product-input" class="form-control" placeholder="Digite o código (Coluna A) ou descrição (Coluna B)..." autocomplete="off" required>
+            <div id="product-suggestions" class="autocomplete-dropdown hidden"></div>
+          </div>
+        </div>
+
+        <!-- Quantidade e Lote -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="move-qty" class="form-label">
+              Quantidade <span class="required">*</span>
+              <span id="qty-available-hint" class="hint-text"></span>
+            </label>
+            <input type="number" id="move-qty" class="form-control" min="1" step="1" placeholder="Ex: 50" required>
+          </div>
+
+          <div class="form-group flex-1">
+            <label for="move-lot" class="form-label">Lote (Opcional)</label>
+            <input type="text" id="move-lot" class="form-control" placeholder="Ex: LT-2026-A1">
+          </div>
+        </div>
+
+        <!-- Botão Adicionar Item à Fila (Entrada Multi-itens) -->
+        <div id="stage-item-action-area" class="stage-item-action-area">
+          <button type="button" id="btn-add-staged-item" class="btn btn-secondary btn-stage-add">
+            <span>➕</span> Adicionar Item à Lista de Entrada
+          </button>
+          <span class="stage-hint">Adicione múltiplos itens nesta vaga antes de finalizar</span>
+        </div>
+
+        <!-- Lista de Itens Enfileirados para Entrada -->
+        <div id="staged-items-container" class="staged-items-container hidden">
+          <div class="staged-items-header">
+            <span class="staged-items-title">📦 Itens para Entrada nesta Vaga (<span id="staged-items-count">0</span>):</span>
+            <button type="button" id="btn-clear-staged-items" class="btn-clear-staged">Limpar Lista</button>
+          </div>
+          <div id="staged-items-list" class="staged-items-list">
+            <!-- Linhas dinâmicas -->
+          </div>
+          <div class="staged-items-footer">
+            <span>Total a dar entrada: <strong id="staged-items-total-units">0 un</strong></span>
+          </div>
+        </div>
+
+        <!-- Número da Solicitação / NF / Observação -->
+        <div class="form-group">
+          <label for="move-doc" class="form-label">
+            Nº Solicitação / NF / Observação <span class="required" id="doc-req-mark">*</span>
+          </label>
+          <input type="text" id="move-doc" class="form-control" placeholder="Ex: Pedido #9021, NF 45892, Motivo da Correção..." required>
+        </div>
+
+        <!-- Data e Hora do Registro -->
+        <div class="form-group">
+          <label class="form-label">Data e Hora do Registro</label>
+          <div class="timestamp-display">
+            <span class="clock-icon">🕒</span>
+            <span id="current-timestamp-preview">Agora</span>
+            <span class="timestamp-auto-tag">Registro Automático</span>
+          </div>
+        </div>
+
+        <!-- Caixa de Mensagens de Validação e Erros -->
+        <div id="movement-error-banner" class="alert-banner alert-danger hidden">
+          <span class="alert-icon">⚠️</span>
+          <span id="movement-error-text">Mensagem de erro</span>
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-movement">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-movement">
+            <span>💾</span> Confirmar Registro
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- 2. Modal de Detalhes da Vaga -->
+  <dialog id="slot-details-modal" class="app-dialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div>
+          <span class="dialog-badge" id="slot-detail-address">RUA 1 - VAGA A1</span>
+          <h3 id="slot-detail-title">Detalhes da Posição</h3>
+        </div>
+        <button class="btn-close" id="btn-close-details-modal">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <!-- Status do Palete -->
+        <div class="pallet-status-card" id="slot-detail-status-card">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- Lista de Produtos Armazenados -->
+        <div class="slot-items-section">
+          <div class="section-heading">
+            <h4>📦 Produtos no Palete</h4>
+            <span id="slot-items-count-badge" class="badge">0 itens</span>
+          </div>
+          <div id="slot-items-list" class="slot-items-list">
+            <!-- Dynamic product cards -->
+          </div>
+        </div>
+
+        <!-- Atalhos rápidos para movimentação nesta vaga -->
+        <div class="quick-actions-bar">
+          <button class="btn btn-success flex-1" id="btn-slot-quick-in">
+            📥 Dar Entrada
+          </button>
+          <button class="btn btn-danger flex-1" id="btn-slot-quick-out">
+            📤 Dar Baixa
+          </button>
+          <button class="btn btn-warning flex-1" id="btn-slot-quick-fix">
+            🛠️ Corrigir
+          </button>
+        </div>
+
+        <!-- Histórico Recente desta Vaga -->
+        <div class="slot-history-section">
+          <h4>📜 Últimas Movimentações desta Vaga</h4>
+          <div id="slot-history-list" class="slot-history-list">
+            <!-- Dynamic history items -->
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" id="btn-close-slot-details">Fechar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 3. Modal de Histórico Geral de Auditoria -->
+  <dialog id="history-modal" class="app-dialog app-dialog-lg">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div class="dialog-title-wrapper">
+          <span class="dialog-badge">AUDITORIA</span>
+          <h3>Histórico de Movimentações</h3>
+        </div>
+        <button class="btn-close" id="btn-close-history-modal">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <!-- Filtros do Histórico -->
+        <div class="history-filters-bar">
+          <div class="filter-item flex-2">
+            <input type="text" id="filter-history-text" class="form-control" placeholder="Filtrar por produto, lote, solicitante...">
+          </div>
+          <div class="filter-item flex-1">
+            <select id="filter-history-type" class="form-control">
+              <option value="ALL">Todos os Tipos</option>
+              <option value="ENTRADA">Apenas Entradas</option>
+              <option value="SAIDA">Apenas Saídas</option>
+              <option value="CORRECAO">Apenas Correções</option>
+            </select>
+          </div>
+          <div class="filter-item flex-1">
+            <select id="filter-history-street" class="form-control">
+              <option value="ALL">Todas as Ruas</option>
+              <!-- Filled by JS -->
+            </select>
+          </div>
+          <button id="btn-export-csv" class="btn btn-outline" title="Baixar planilha CSV">
+            📥 Exportar CSV
+          </button>
+        </div>
+
+        <!-- Tabela de Movimentações -->
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th>
+                <th>Tipo</th>
+                <th>Endereço</th>
+                <th>Produto</th>
+                <th>Qtd</th>
+                <th>Lote</th>
+                <th>Solicitação / Obs</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <!-- Filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <span id="history-record-count" class="text-muted">Total: 0 registros</span>
+        <button type="button" class="btn btn-secondary" id="btn-close-history-footer">Fechar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 4. Modal de Gerenciar Rua e Prateleiras -->
+  <dialog id="manage-street-modal" class="app-dialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div class="dialog-title-wrapper">
+          <span class="dialog-badge">CONFIGURAÇÃO</span>
+          <h3 id="manage-street-modal-title">Configurar Prateleiras da Rua</h3>
+        </div>
+        <button class="btn-close" id="btn-close-manage-street-modal">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="form-group">
+          <label class="form-label" for="edit-street-name-input">Nome da Rua <span class="required">*</span></label>
+          <input type="text" id="edit-street-name-input" class="form-control" placeholder="Ex: Rua 1, Rua A, Corredor B...">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label" for="edit-levels-count-input">
+              🏢 Quantidade de Andares
+            </label>
+            <input type="number" id="edit-levels-count-input" class="form-control" min="1" max="15" value="2" placeholder="Ex: 2, 3, 4...">
+            <small class="text-muted" id="edit-levels-preview">Andares: B (superior), A (térreo)</small>
+          </div>
+
+          <div class="form-group flex-1">
+            <label class="form-label" for="edit-slots-per-level-input">
+              📦 Vagas por Andar
+            </label>
+            <input type="number" id="edit-slots-per-level-input" class="form-control" min="1" max="100" value="8" placeholder="Ex: 8, 10, 20...">
+            <small class="text-muted" id="edit-slots-preview">Vagas de 1 até 8</small>
+          </div>
+        </div>
+
+        <div class="street-summary-preview-card" id="street-summary-preview-card">
+          <div class="preview-metric">
+            <span class="preview-label">Capacidade desta Rua:</span>
+            <span class="preview-value" id="preview-total-slots">16 vagas</span>
+          </div>
+          <div class="preview-details" id="preview-letters-desc">
+            Andares: <strong>B, A</strong> • Posições: <strong>A1 a A8, B1 a B8</strong>
+          </div>
+        </div>
+
+        <div class="danger-zone-section" id="manage-street-danger-zone">
+          <h4>Zona de Perigo</h4>
+          <p>Excluir esta rua removerá todas as vagas pertencentes a ela.</p>
+          <button type="button" class="btn btn-outline-danger" id="btn-delete-street">
+            🗑️ Excluir Esta Rua
+          </button>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-manage-street">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-save-street-config">Salvar Alterações</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 5. Modal de Backup e Configurações -->
+  <dialog id="settings-modal" class="app-dialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div class="dialog-title-wrapper">
+          <span class="dialog-badge">SISTEMA</span>
+          <h3>Backup e Configurações</h3>
+        </div>
+        <button class="btn-close" id="btn-close-settings-modal">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="settings-block">
+          <h4>💾 Backup dos Dados</h4>
+          <p>Salve uma cópia de segurança de todos os estoques, ruas, vagas e movimentações em um arquivo JSON.</p>
+          <div class="settings-btn-row">
+            <button id="btn-download-backup" class="btn btn-primary">
+              📥 Baixar Arquivo de Backup (.json)
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-block">
+          <h4>📂 Restaurar Backup</h4>
+          <p>Selecione um arquivo de backup (.json) para restaurar as informações no sistema.</p>
+          <input type="file" id="backup-file-input" accept=".json" class="file-input hidden">
+          <button id="btn-trigger-import" class="btn btn-outline">
+            📤 Selecionar Arquivo para Restaurar
+          </button>
+        </div>
+
+        <div class="settings-block danger-zone">
+          <h4>⚠️ Reiniciar Sistema</h4>
+          <p>Deseja carregar os dados de exemplo padrão ou limpar todo o estoque?</p>
+          <div class="settings-btn-row">
+            <button id="btn-reset-demo" class="btn btn-outline-warning">
+              🔄 Restaurar Dados de Exemplo
+            </button>
+            <button id="btn-clear-all" class="btn btn-outline-danger">
+              🗑️ Limpar Todos os Dados
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" id="btn-close-settings">Fechar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 6. Modal de Catálogo Base de Produtos -->
+  <dialog id="catalog-modal" class="app-dialog app-dialog-lg">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div class="dialog-title-wrapper">
+          <span class="dialog-badge">CATÁLOGO BASE</span>
+          <h3>📚 Catálogo de Produtos para Auto-preenchimento</h3>
+        </div>
+        <button class="btn-close" id="btn-close-catalog-modal">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="catalog-instructions-box">
+          <p><strong>Como funciona:</strong> Importe sua planilha com os produtos cadastrados para ativar o <strong>preenchimento automático</strong> ao dar entrada e facilitar a busca por código ou descrição.</p>
+          <div class="catalog-format-chips">
+            <span class="chip"><strong>Coluna A:</strong> Código do Item</span>
+            <span class="chip"><strong>Coluna B:</strong> Descrição do Item</span>
+            <span class="chip"><strong>Formatos:</strong> .XLSX, .XLS, .CSV ou Colar do Excel</span>
+          </div>
+        </div>
+
+        <!-- Seções de Importação -->
+        <div class="import-options-grid">
+          <!-- Opção 1: Arquivo Excel / CSV -->
+          <div class="import-card primary-card">
+            <div class="import-card-header">
+              <span class="import-badge">RECOMENDADO</span>
+              <h4>📂 Selecionar Planilha Excel</h4>
+            </div>
+            <p>Selecione seu arquivo do Excel (.xlsx ou .xls) ou CSV diretamente do seu computador:</p>
+            <input type="file" id="catalog-csv-file" accept=".xlsx,.xls,.csv,.txt" class="file-input hidden">
+            <div class="csv-upload-dropzone" id="catalog-dropzone">
+              <span class="dropzone-icon">📊</span>
+              <strong>Clique aqui para escolher a planilha Excel (.xlsx)</strong>
+              <small class="text-muted">Compatível com .xlsx, .xls e .csv</small>
+            </div>
+          </div>
+
+          <!-- Opção 2: Colar do Excel -->
+          <div class="import-card">
+            <div class="import-card-header">
+              <span class="import-badge secondary">COPIAR & COLAR</span>
+              <h4>📋 Colar Linhas do Excel (Ctrl+V)</h4>
+            </div>
+            <p>Selecione as colunas A e B no Excel, aperte <strong>Ctrl+C</strong> e cole abaixo:</p>
+            <textarea id="paste-excel-input" class="form-control excel-textarea" rows="3" placeholder="Exemplo colado:&#10;1040&#9;Parafuso Sextavado M8x25&#10;1041&#9;Fita Adesiva Kraft 48mm"></textarea>
+            <div class="import-btn-row">
+              <button type="button" id="btn-process-paste" class="btn btn-outline">
+                <span>⚡</span> Processar Texto Colado
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabela do Catálogo Atual -->
+        <div class="catalog-table-section">
+          <div class="section-toolbar">
+            <div class="search-box-inline">
+              <span class="search-icon-sm">🔍</span>
+              <input type="text" id="filter-catalog-input" class="form-control" placeholder="Buscar no catálogo por código ou descrição...">
+            </div>
+            <span id="catalog-total-counter" class="badge-counter">0 produtos</span>
+            <button type="button" id="btn-clear-catalog" class="btn btn-outline-danger btn-sm" title="Limpar todo o catálogo">
+              🗑️ Limpar Catálogo
+            </button>
+          </div>
+
+          <div class="table-responsive catalog-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Coluna A (Código)</th>
+                  <th>Coluna B (Descrição)</th>
+                  <th style="width: 10%; text-align: center;">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="catalog-table-body">
+                <!-- Filled dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" id="btn-close-catalog-footer">Fechar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 7. Modal de Configuração do Supabase (Nuvem) -->
+  <dialog id="supabase-modal" class="app-dialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div class="dialog-title-wrapper">
+          <span class="dialog-badge">NUVEM & SINCRONIZAÇÃO</span>
+          <h3>☁️ Conectar com Supabase</h3>
+        </div>
+        <button class="btn-close" id="btn-close-supabase-modal">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="catalog-instructions-box">
+          <p>Conecte com seu projeto gratuito do <strong>Supabase</strong> para usar o sistema em qualquer navegador, computador ou celular via <strong>GitHub Pages</strong> com sincronização instantânea em tempo real!</p>
+          <div class="catalog-format-chips">
+            <span class="chip"><strong>Status:</strong> <span id="supabase-status-detail">Verificando...</span></span>
+            <span class="chip"><strong>Sincronização:</strong> Tempo Real (WebSockets)</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="supabase-url-input" class="form-label">
+            URL do Projeto Supabase <span class="required">*</span>
+          </label>
+          <input type="url" id="supabase-url-input" class="form-control" placeholder="https://seu-projeto.supabase.co" autocomplete="off">
+          <small class="text-muted">Encontrada em: <em>Project Settings &gt; API &gt; Project URL</em></small>
+        </div>
+
+        <div class="form-group">
+          <label for="supabase-key-input" class="form-label">
+            Chave Pública Anônima (anon key) <span class="required">*</span>
+          </label>
+          <textarea id="supabase-key-input" class="form-control" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." autocomplete="off"></textarea>
+          <small class="text-muted">Encontrada em: <em>Project Settings &gt; API &gt; Project API keys (anon public)</em></small>
+        </div>
+
+        <div id="supabase-connection-feedback" class="alert-banner hidden">
+          <span id="supabase-feedback-text">Mensagem</span>
+        </div>
+
+        <div class="settings-btn-row">
+          <button type="button" id="btn-test-supabase" class="btn btn-outline flex-1">
+            🧪 Testar Conexão
+          </button>
+          <button type="button" id="btn-save-supabase" class="btn btn-primary flex-1">
+            💾 Salvar e Conectar
+          </button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+        <div class="settings-block">
+          <h4>📤 Sincronizar Dados Locais para a Nuvem</h4>
+          <p>Se você já cadastrou dados e vagas no modo local, clique abaixo para enviá-los para o banco de dados Supabase.</p>
+          <button type="button" id="btn-sync-to-cloud" class="btn btn-outline" disabled>
+            ☁️ Enviar Estoque Local para o Supabase
+          </button>
+        </div>
+
+        <div class="settings-block danger-zone">
+          <h4>Desconectar da Nuvem</h4>
+          <p>Volta a operar apenas com o armazenamento local (LocalStorage).</p>
+          <button type="button" id="btn-disconnect-supabase" class="btn btn-outline-danger">
+            Desconectar Supabase
+          </button>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" id="btn-close-supabase-footer">Fechar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 8. Modal de Confirmação com Senha para Limpar Dados -->
+  <dialog id="security-password-modal" class="app-dialog app-dialog-sm">
+    <div class="dialog-card">
+      <div class="dialog-header danger-header">
+        <div class="dialog-title-wrapper">
+          <span class="dialog-badge badge-danger">AÇÃO CRÍTICA</span>
+          <h3>🔒 Confirmação de Segurança</h3>
+        </div>
+        <button type="button" class="btn-close" id="btn-close-security-modal">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="alert-banner alert-danger">
+          <span>⚠️ <strong>Atenção:</strong> Esta ação apagará permanentemente todos os produtos, vagas ocupadas, movimentações e catálogo deste dispositivo e da nuvem Supabase.</span>
+        </div>
+
+        <p class="text-muted" style="font-size: 0.875rem;">
+          Para autorizar a limpeza definitiva do estoque, digite a senha mestre de autorização:
+        </p>
+
+        <form id="security-password-form" autocomplete="off">
+          <div class="form-group">
+            <label for="security-password-input" class="form-label">Senha de Autorização <span class="required">*</span></label>
+            <div class="input-icon-wrapper">
+              <span class="input-icon">🔑</span>
+              <input type="password" id="security-password-input" class="form-control" placeholder="Digite a senha de autorização..." required autocomplete="off">
+              <button type="button" id="btn-toggle-security-pwd" class="btn-input-action" title="Mostrar/ocultar senha">👁️</button>
+            </div>
+          </div>
+
+          <div id="security-password-feedback" class="alert-banner alert-danger hidden">
+            <span id="security-password-feedback-text">Senha incorreta!</span>
+          </div>
+
+          <div class="settings-btn-row" style="margin-top: 1.25rem;">
+            <button type="button" class="btn btn-secondary flex-1" id="btn-cancel-security-action">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-outline-danger flex-1" id="btn-confirm-delete-all">
+              🗑️ Confirmar e Limpar Tudo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="xlsx.full.min.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="catalog-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
