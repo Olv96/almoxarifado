@@ -34,7 +34,7 @@
           <label for="auth-username" class="form-label">Usuário</label>
           <div class="input-icon-wrapper">
             <span class="input-icon">👤</span>
-            <input type="text" id="auth-username" class="form-control" placeholder="Usuário" required autocomplete="username" value="brunohof">
+            <input type="text" id="auth-username" class="form-control" placeholder="Usuário" required autocomplete="username">
           </div>
         </div>
 
@@ -42,7 +42,7 @@
           <label for="auth-password" class="form-label">Senha de Acesso</label>
           <div class="input-icon-wrapper">
             <span class="input-icon">🔑</span>
-            <input type="password" id="auth-password" class="form-control" placeholder="Digite sua senha" autocomplete="current-password">
+            <input type="password" id="auth-password" class="form-control" placeholder="Digite sua senha" required autocomplete="current-password">
             <button type="button" id="btn-toggle-password" class="btn-input-action" title="Mostrar/ocultar senha">👁️</button>
           </div>
         </div>
@@ -55,15 +55,11 @@
         </div>
 
         <div id="auth-error-banner" class="alert-banner alert-danger hidden">
-          <span>⚠️ Senha incorreta! Digite a senha cadastrada ou clique no botão de Acesso Direto abaixo.</span>
+          <span>⚠️ Usuário ou senha incorretos! Verifique e tente novamente.</span>
         </div>
 
         <button type="submit" id="btn-auth-submit" class="btn btn-primary btn-auth">
           <span>🔓</span> Entrar no Eclipse
-        </button>
-
-        <button type="button" id="btn-quick-login-admin" class="btn btn-secondary" style="width: 100%; margin-top: 0.6rem; font-size: 0.85rem; padding: 0.7rem; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: #e2e8f0; font-weight: 600; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer;">
-          <span>⚡</span> Entrar como Brunohof (Acesso Direto)
         </button>
       </form>
 
@@ -95,22 +91,6 @@
           </div>
           <p class="subtitle">Gestão Visual de Endereçamento & Paletes</p>
         </div>
-      </div>
-
-      <!-- Seletor de Armazém Ativo -->
-      <div class="warehouse-selector-box" id="warehouse-selector-box">
-        <div class="warehouse-selector-label">
-          <span class="warehouse-icon">🏢</span>
-          <span class="warehouse-label-text">Armazém:</span>
-        </div>
-        <select id="select-active-warehouse" class="warehouse-dropdown" title="Alternar entre armazéns">
-          <option value="armazem_c" selected>Armazém C</option>
-          <option value="armazem_a">Armazém A</option>
-          <option value="armazem_b">Armazém B</option>
-        </select>
-        <button type="button" id="btn-open-manage-warehouses" class="btn-warehouse-manage" title="Renomear e Gerenciar Armazéns">
-          ✏️
-        </button>
       </div>
 
       <!-- Quick Search Bar -->
@@ -926,40 +906,6 @@
             ⚡ Confirmar e Efetivar Baixas no Estoque
           </button>
         </div>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- Modal: Gerenciamento e Renomeação de Armazéns -->
-  <dialog id="manage-warehouses-modal" class="app-dialog app-dialog-md">
-    <div class="dialog-card">
-      <div class="dialog-header">
-        <div class="dialog-title-wrapper">
-          <span class="dialog-badge badge-primary">GESTÃO DE ARMAZÉNS</span>
-          <h3>🏢 Gerenciar &amp; Renomear Armazéns</h3>
-          <p class="dialog-subtitle">Alterne entre os armazéns e renomeie conforme a organização da sua operação.</p>
-        </div>
-        <button class="btn-close" id="btn-close-manage-warehouses">✕</button>
-      </div>
-
-      <div class="dialog-body">
-        <div id="warehouses-list-container" class="warehouses-list-container">
-          <!-- Gerado dinamicamente via JS com inputs editáveis -->
-        </div>
-
-        <div style="margin-top: 1.25rem; padding-top: 0.85rem; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; justify-content: space-between; align-items: center;">
-          <button type="button" id="btn-add-new-warehouse" class="btn btn-outline" style="font-size: 0.85rem;">
-            ➕ Novo Armazém
-          </button>
-          <span class="text-muted" style="font-size: 0.8rem;">Cada armazém possui suas próprias ruas e posições.</span>
-        </div>
-      </div>
-
-      <div class="dialog-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-        <button type="button" class="btn btn-secondary" id="btn-cancel-manage-warehouses">Fechar</button>
-        <button type="button" class="btn btn-success" id="btn-save-warehouse-names">
-          💾 Salvar Nomes
-        </button>
       </div>
     </div>
   </dialog>
