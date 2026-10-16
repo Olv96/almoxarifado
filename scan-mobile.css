@@ -1,0 +1,166 @@
+/* ==========================================================================
+   ENTRADA / SAÍDA PELO CELULAR (fluxo manual com teclado numérico)
+   Os botões ENTRADA/SAÍDA só aparecem em telas de celular (até 768px).
+   ========================================================================== */
+
+#mobile-scan-bar {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  background: rgba(15, 23, 42, 0.96);
+  border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 768px) {
+  #mobile-scan-bar { display: flex; }
+  body.has-scan-bar { padding-bottom: 5.5rem; }
+}
+
+.msb-btn {
+  flex: 1;
+  min-height: 3.4rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  justify-content: center;
+}
+
+/* ---------- Diálogo em tela cheia no celular ---------- */
+dialog.scan-dialog {
+  width: 100%;
+  max-width: 560px;
+}
+
+@media (max-width: 768px) {
+  dialog.scan-dialog {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+  }
+  dialog.scan-dialog .dialog-card { height: 100%; border-radius: 0; }
+  dialog.scan-dialog .dialog-body { max-height: none; flex: 1; }
+}
+
+.scan-body { gap: 0.9rem; padding: 1rem; }
+
+.scan-big {
+  width: 100%;
+  min-height: 3.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.scan-mono { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
+
+/* ---------- Campos ---------- */
+.mm-row { display: flex; gap: 0.5rem; align-items: stretch; }
+.mm-row .form-control { flex: 1; min-width: 0; }
+.mm-kb { min-width: 3.6rem; font-weight: 800; justify-content: center; }
+.mm-help { color: var(--text-muted); font-size: 0.72rem; margin-top: 0.3rem; }
+
+.scan-qty { font-size: 1.8rem; text-align: center; font-weight: 800; min-height: 3.4rem; }
+
+/* ---------- Resultados ---------- */
+.scan-read-summary {
+  display: flex;
+  gap: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.9rem;
+}
+.scan-read-summary div { display: flex; flex-direction: column; min-width: 0; }
+.scan-read-summary small { color: var(--text-muted); font-size: 0.65rem; }
+.scan-read-summary strong { font-size: 1rem; word-break: break-all; }
+
+.scan-section-title { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
+
+.scan-cands { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.scan-cand {
+  text-align: left;
+  width: 100%;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.scan-cand:active { border-color: var(--border-focus); }
+.scan-cand.selected { border-color: var(--color-warning); background: var(--bg-card-hover); }
+.scan-cand:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.scan-cand-desc { font-weight: 700; font-size: 1rem; line-height: 1.25; }
+.scan-cand-meta { font-size: 0.85rem; color: var(--text-muted); }
+.scan-cand-meta b { color: var(--text-main); }
+.scan-cand-addr { font-size: 1.15rem; font-weight: 800; color: var(--color-warning); }
+
+.scan-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.12rem 0.5rem;
+  border-radius: var(--radius-full);
+  margin: 0.15rem 0.3rem 0 0;
+}
+.scan-tag.ok { background: var(--color-success-light); color: var(--color-success); }
+.scan-tag.warn { background: var(--color-warning-light); color: var(--color-warning); }
+
+.scan-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+/* ---------- Cartões de produto / confirmação ---------- */
+.scan-confirm-card {
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 2px solid;
+  background: var(--bg-card);
+}
+.scan-confirm-card.out { border-color: var(--color-danger); }
+.scan-confirm-card.in { border-color: var(--color-success); }
+
+.scan-bigaddr { font-size: 1.5rem; font-weight: 800; color: var(--color-warning); }
+.scan-warnline { font-size: 0.8rem; color: var(--color-warning); font-weight: 600; }
+
+#mm-confirm { display: flex; flex-direction: column; gap: 0.9rem; }
+
+/* ---------- Aviso rápido ---------- */
+.scan-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 6.5rem;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--color-success);
+  color: #fff;
+  font-weight: 700;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-full);
+  z-index: 100000;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.scan-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
