@@ -1,0 +1,263 @@
+/* ==========================================================================
+   ENTRADA / SAÍDA PELO CELULAR (leitura da etiqueta pela câmera)
+   Os botões ENTRADA/SAÍDA só aparecem em telas de celular (até 768px).
+   ========================================================================== */
+
+#mobile-scan-bar {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  background: rgba(15, 23, 42, 0.96);
+  border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 768px) {
+  #mobile-scan-bar { display: flex; }
+  body.has-scan-bar { padding-bottom: 5.5rem; }
+}
+
+.msb-btn {
+  flex: 1;
+  min-height: 3.4rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  justify-content: center;
+}
+
+/* ---------- Diálogo em tela cheia no celular ---------- */
+dialog.scan-dialog {
+  width: 100%;
+  max-width: 560px;
+}
+
+@media (max-width: 768px) {
+  dialog.scan-dialog {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+  }
+  dialog.scan-dialog .dialog-card { height: 100%; border-radius: 0; }
+  dialog.scan-dialog .dialog-body { max-height: none; flex: 1; }
+}
+
+.scan-body { gap: 0.9rem; padding: 1rem; }
+
+/* ---------- Câmera e moldura-guia ---------- */
+.scan-stage {
+  position: relative;
+  width: 100%;
+  height: 46vh;
+  height: 46dvh;
+  min-height: 220px;
+  background: #000;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.scan-stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scan-guide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 94%;
+  aspect-ratio: 2.4 / 1;
+  max-height: 96%;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(255, 255, 255, 0.75);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.scan-box {
+  position: absolute;
+  border: 2px solid;
+  border-radius: 4px;
+}
+
+.scan-box span {
+  position: absolute;
+  top: -1.05rem;
+  left: 0;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0 0.3rem;
+  color: #fff;
+  border-radius: 3px;
+}
+
+.scan-box-cod { left: 22%; top: 18%; width: 76%; height: 38%; border-color: #ef4444; }
+.scan-box-cod span { background: #ef4444; }
+.scan-box-lot { left: 3%; top: 72%; width: 52%; height: 28%; border-color: #22c55e; }
+.scan-box-lot span { background: #22c55e; }
+
+.scan-torch {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.2rem;
+  background: rgba(15, 23, 42, 0.7);
+  color: #fff;
+}
+.scan-torch.on { background: var(--color-warning); }
+
+.scan-hint { font-size: 0.8rem; color: var(--text-muted); text-align: center; }
+
+.scan-status { min-height: 1.2rem; font-size: 0.85rem; text-align: center; color: var(--text-muted); }
+.scan-status-warn { color: var(--color-warning); }
+
+.scan-big {
+  width: 100%;
+  min-height: 3.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.scan-mono { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
+
+/* ---------- Recortes e campos manuais ---------- */
+.scan-crops { display: flex; flex-direction: column; gap: 0.5rem; }
+.scan-crop {
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 0.3rem;
+  text-align: center;
+}
+.scan-crop img { max-width: 100%; max-height: 70px; display: block; margin: 0 auto; }
+.scan-crop small { color: #475569; font-size: 0.65rem; }
+
+.scan-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.9rem;
+}
+
+/* ---------- Resultados ---------- */
+.scan-read-summary {
+  display: flex;
+  gap: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.9rem;
+}
+.scan-read-summary div { display: flex; flex-direction: column; min-width: 0; }
+.scan-read-summary small { color: var(--text-muted); font-size: 0.65rem; }
+.scan-read-summary strong { font-size: 0.95rem; word-break: break-all; }
+
+.scan-section-title { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
+
+.scan-cands { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.scan-cand {
+  text-align: left;
+  width: 100%;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.scan-cand:active { border-color: var(--border-focus); }
+
+.scan-cand-desc { font-weight: 700; font-size: 1rem; line-height: 1.25; }
+.scan-cand-meta { font-size: 0.85rem; color: var(--text-muted); }
+.scan-cand-meta b { color: var(--text-main); }
+.scan-cand-addr { font-size: 1.05rem; font-weight: 800; color: var(--color-warning); }
+
+.scan-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.12rem 0.5rem;
+  border-radius: var(--radius-full);
+  margin: 0.15rem 0.3rem 0 0;
+}
+.scan-tag.ok { background: var(--color-success-light); color: var(--color-success); }
+.scan-tag.warn { background: var(--color-warning-light); color: var(--color-warning); }
+
+.scan-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+/* ---------- Confirmação ---------- */
+.scan-confirm-card {
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 2px solid;
+  background: var(--bg-card);
+}
+.scan-confirm-card.out { border-color: var(--color-danger); }
+.scan-confirm-card.in { border-color: var(--color-success); }
+
+.scan-bigaddr { font-size: 1.5rem; font-weight: 800; color: var(--color-warning); }
+.scan-warnline { font-size: 0.8rem; color: var(--color-warning); font-weight: 600; }
+
+.scan-qty { font-size: 1.8rem; text-align: center; font-weight: 800; min-height: 3.4rem; }
+.scan-lotbig { font-size: 1.2rem; font-weight: 700; }
+
+.scan-chip {
+  margin-top: 0.4rem;
+  align-self: flex-start;
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+/* ---------- Aviso rápido ---------- */
+.scan-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 6.5rem;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--color-success);
+  color: #fff;
+  font-weight: 700;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-full);
+  z-index: 100000;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.scan-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
