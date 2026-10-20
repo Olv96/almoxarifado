@@ -1,0 +1,191 @@
+/* ==========================================================================
+   MOVER PALETE DE UMA VAGA PARA OUTRA
+   Funciona no PC e no celular (tela cheia e botões grandes no mobile).
+   ========================================================================== */
+
+.mp-move-row { margin-top: 0.6rem; }
+.mp-open-btn {
+  width: 100%;
+  min-height: 3rem;
+  font-weight: 700;
+  justify-content: center;
+}
+
+/* ---------- Diálogo ---------- */
+dialog.mp-dialog { width: 100%; max-width: 620px; }
+dialog.mp-dialog .dialog-card { display: flex; flex-direction: column; max-height: 92dvh; }
+
+@media (max-width: 768px) {
+  dialog.mp-dialog {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+  }
+  dialog.mp-dialog .dialog-card { height: 100%; max-height: none; border-radius: 0; }
+}
+
+.mp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.mp-footer {
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mp-confirm, .mp-cancel {
+  width: 100%;
+  min-height: 3.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.mp-hint { text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+/* ---------- Origem ---------- */
+.mp-origin {
+  border: 2px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 1rem;
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.mp-origin-addr { font-size: 1.1rem; font-weight: 800; color: var(--color-warning); }
+.mp-origin-item { display: flex; flex-direction: column; gap: 0.1rem; }
+.mp-origin-name { font-weight: 700; line-height: 1.25; }
+.mp-origin-meta { font-size: 0.85rem; color: var(--text-muted); }
+.mp-origin-meta b { color: var(--text-main); }
+.mp-origin-note { font-size: 0.78rem; color: var(--color-warning); font-weight: 600; }
+
+/* ---------- Dica (mesmo produto perto de vaga vazia) ---------- */
+.mp-sug {
+  border: 1px solid var(--color-info, #38bdf8);
+  background: rgba(56, 189, 248, 0.08);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.mp-sug-title { font-weight: 800; font-size: 0.9rem; }
+.mp-sug-row { display: flex; flex-direction: column; gap: 0.4rem; }
+.mp-sug-text { font-size: 0.85rem; line-height: 1.3; }
+.mp-sug-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* ---------- Seleção do destino ---------- */
+.mp-section { font-weight: 800; font-size: 0.95rem; }
+.mp-section small { color: var(--text-muted); font-weight: 600; }
+
+.mp-streets { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.mp-street {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mp-street small { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; }
+.mp-street.active { border-color: var(--color-warning); background: var(--bg-card-hover); }
+.mp-street:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.mp-level { display: flex; flex-direction: column; gap: 0.5rem; }
+.mp-level-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.mp-none { font-size: 0.85rem; color: var(--text-muted); padding: 0.4rem 0; }
+
+.mp-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); gap: 0.55rem; }
+
+.mp-chip {
+  min-height: 3.2rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-success);
+  background: var(--color-success-light);
+  color: var(--color-success);
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.mp-chip:active { transform: scale(0.97); }
+.mp-chip.mp-star { border-color: var(--color-warning); color: var(--color-warning); background: var(--color-warning-light); }
+.mp-chip.selected { background: var(--color-success); color: #fff; border-color: var(--color-success); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35); }
+.mp-sug-chip { min-width: 4.4rem; }
+
+.mp-legend { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ---------- Aviso rápido ---------- */
+.mp-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 6.5rem;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--color-success);
+  color: #fff;
+  font-weight: 700;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-full);
+  z-index: 100000;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  max-width: 90vw;
+  text-align: center;
+}
+.mp-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- Botão MOVER na barra do celular (3 botões lado a lado) ---------- */
+#mobile-scan-bar .msb-btn { font-size: 0.95rem; padding-left: 0.4rem; padding-right: 0.4rem; }
+
+/* ---------- Escolher o palete de origem ---------- */
+.mp-srcs { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.55rem; }
+
+.mp-src {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-height: 4.6rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mp-src:active { border-color: var(--color-warning); }
+.mp-src-code { font-size: 1.15rem; font-weight: 800; color: var(--color-warning); }
+.mp-src-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mp-src-meta { font-size: 0.7rem; color: var(--text-muted); }
+.mp-src-meta b { color: var(--color-warning); }
